@@ -28,12 +28,18 @@ DEBUG = True
 def logdata(sensor_id, temp, relhum, elapsed_time):
 	print "sending data"
 	# The first N entries of relative humidity set point are determined by the user
+	N = 10
 	cursor = db.cursor()
 	cursor.execute("SELECT id, setpoint_relhum FROM humidifier ORDER BY id DESC LIMIT 1")
-	if(id)
+	data = cursor.fetchall()
 	setpoint_relhum = random.randint(40, 60)
-	# for row in cursor.fetchall():
-	# 	setpoint_relhum = row[0]
+	
+	setpoint_relhum = data[0]
+
+	if(data[0][0] < N):
+		setpoint_relhum = random.randint(40, 60)
+	else:
+		setpoint_relhum = data[0][1]
 
 	cursor.execute("INSERT INTO humidifier (sensor_id, temp, relhum, elapsed_time, setpoint_relhum) VALUES (%s,%s,%s,%s,%s)", (sensor_id, temp, relhum, elapsed_time,setpoint_relhum))
 	db.commit()

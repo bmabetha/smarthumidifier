@@ -5,7 +5,7 @@ import subprocess
 import serial
 import MySQLdb
 import numpy as np
-import re
+import time
 import sklearn 
 from sklearn import svm
 from sklearn.decomposition import PCA
@@ -78,5 +78,13 @@ def learn():
 	print(pred_humoutput)
 	diff = test_humoutput[0] - pred_humoutput[0]
 	print(diff)	
-	
-learn()
+
+	cursor = db.cursor()
+	cursor.execute("INSERT INTO humidifier (setpoint_relhum) VALUES (%s)", (pred_humoutput))
+	db.commit()
+	cursor.close()
+
+while(True):	
+	learn()
+	# Learn every 10 minutes (ideally have the user determine the learning interval)
+	time.sleep(10)

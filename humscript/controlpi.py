@@ -33,13 +33,10 @@ def getsetpoint():
 
 def control()
 	data = getsetpoint()
-	current_relhum = data[0]
-	setpoint = data[1]
+	current_relhum = data[0][0]
+	setpoint = data[0][1]
 	if(current_relhum < setpoint):
 		GPIO.output(18,GPIO.LOW)
 
 	else
 		GPIO.output(18,GPIO.HIGH)
-
-	# Learning algorithm 
-	if(readcounter == 100)
