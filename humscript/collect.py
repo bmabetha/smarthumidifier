@@ -18,7 +18,8 @@ db.commit()
 cursor.close()
 
 ser = serial.Serial(
-port = '/dev/tty.usbmodem1411',
+#port = '/dev/ttyACM0', # When using raspberry pi	
+port = '/dev/tty.usbmodem1411', # When using arduino to laptop
 baudrate = 9600
 )
 
@@ -32,9 +33,6 @@ def logdata(sensor_id, temp, relhum, elapsed_time):
 	cursor = db.cursor()
 	cursor.execute("SELECT id, setpoint_relhum FROM humidifier ORDER BY id DESC LIMIT 1")
 	data = cursor.fetchall()
-	setpoint_relhum = random.randint(40, 60)
-	
-	setpoint_relhum = data[0]
 
 	if(data[0][0] < N):
 		setpoint_relhum = random.randint(40, 60)

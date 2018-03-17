@@ -21,7 +21,7 @@ db = MySQLdb.connect(
 	db="humidifier")
 
 cursor = db.cursor()
-cursor.execute("CREATE TABLE IF NOT EXISTS humidifier (id INT(10) NOT NULL AUTO_INCREMENT,sensor_id INT(10) NOT NULL,date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,temp float(8,2)  DEFAULT NULL,relhum float(8,2)  DEFAULT NULL,elapsed_time int(10) NOT NULL,PRIMARY KEY (id))")
+cursor.execute("CREATE TABLE IF NOT EXISTS humidifier (id INT(10) NOT NULL AUTO_INCREMENT,sensor_id INT(10) NOT NULL,date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,temp float(8,2)  DEFAULT NULL,relhum float(8,2)  DEFAULT NULL, setrelhum float(8,2)  DEFAULT NULL, elapsed_time int(10) NOT NULL,PRIMARY KEY (id))")
 db.commit()
 cursor.close()
 
@@ -46,7 +46,7 @@ def getfeatures(rows):
 	datapoints = []
 	humoutput = []
 	for row in rows:
-		id = row[0]
+		log_id = row[0]
 		sensor_id = row[1]
 		date = row[2]
 		year = date.year
@@ -59,7 +59,7 @@ def getfeatures(rows):
 		elapsed_time = row[6]
 		datapoints.append([month, hour, temp, relhum])
 		humoutput.append(setpoint_relhum)
-	return (datapoints, humoutput)
+	return (datapoints, humoutput, log_id)
 	
 
 def learn():
@@ -70,7 +70,7 @@ def learn():
 	Y = np.asarray(humoutput)
 
 	#X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.33, random_state=42)
-	(test_datapoints, test_humoutput) = getfeatures(gettest())
+	(test_datapoints, test_humoutput, log_id) = getfeatures(gettest())
 
 	clf = svm.SVC()
 	clf.fit(X, Y)
@@ -80,7 +80,7 @@ def learn():
 	print(diff)	
 
 	cursor = db.cursor()
-	cursor.execute("INSERT INTO humidifier (setpoint_relhum) VALUES (%s)", (pred_humoutput))
+	cursor.execute("UPDATE humidifier SET setpoint_relhum = %s WHERE id = %s", ([pred_humoutput, log_id[0]]))
 	db.commit()
 	cursor.close()
 
