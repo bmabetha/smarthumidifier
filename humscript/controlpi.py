@@ -31,12 +31,14 @@ def getsetpoint():
 	cursor.close()
 	return data
 
-def control()
+def control():
 	data = getsetpoint()
 	current_relhum = data[0][0]
 	setpoint = data[0][1]
-	if(current_relhum < setpoint):
-		GPIO.output(18,GPIO.LOW)
-
-	else
+	if(current_relhum <= (setpoint - 0.5)):
 		GPIO.output(18,GPIO.HIGH)
+		print "gpio set high"
+
+	else:
+		GPIO.output(18,GPIO.LOW)
+		print "gpio set low"

@@ -5,13 +5,6 @@ import serial
 import numpy as np
 import MySQLdb
 import time
-import sklearn 
-from sklearn import svm
-from sklearn.decomposition import PCA
-from sklearn.multiclass import OutputCodeClassifier
-from sklearn.svm import LinearSVC
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from flask_session import Session
 from passlib.apps import custom_app_context as pwd_context
@@ -108,7 +101,6 @@ def login():
         rows = cursor.fetchall()
         cursor.close()
         # ensure username exists and password is correct
-        print rows[0][2]
         if len(rows) != 1 or not request.form.get("password", rows[0][2]):
             return apology("invalid username and/or password")
 

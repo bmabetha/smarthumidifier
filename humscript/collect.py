@@ -5,6 +5,9 @@ import subprocess
 import serial
 import random
 import MySQLdb
+import datetime
+
+#from controlpi import * 
 
 db = MySQLdb.connect(
 	host="humidifier.cyqxc8aabmoz.us-east-2.rds.amazonaws.com",
@@ -28,16 +31,17 @@ DEBUG = True
 
 def logdata(sensor_id, temp, relhum, elapsed_time):
 	print "sending data"
+
 	# The first N entries of relative humidity set point are determined by the user
-	N = 10
+	# Remember to put condition of setting setpoint for the first N entries
+
+	# Time dependent user
+
+	# Select the last setpoint and use that to determine the set point of the new entry
 	cursor = db.cursor()
 	cursor.execute("SELECT id, setpoint_relhum FROM humidifier ORDER BY id DESC LIMIT 1")
 	data = cursor.fetchall()
-
-	if(data[0][0] < N):
-		setpoint_relhum = random.randint(40, 60)
-	else:
-		setpoint_relhum = data[0][1]
+	setpoint_relhum = data[0][1]
 
 	cursor.execute("INSERT INTO humidifier (sensor_id, temp, relhum, elapsed_time, setpoint_relhum) VALUES (%s,%s,%s,%s,%s)", (sensor_id, temp, relhum, elapsed_time,setpoint_relhum))
 	db.commit()
@@ -45,6 +49,7 @@ def logdata(sensor_id, temp, relhum, elapsed_time):
 
 
 def run():
+	prev_rel = 0  # initialize previous relative humidity to be zero
 	firstreading = 0 # Track First Entry to have it as the start of the time stamp
 	while(True):
 		line = ser.readline().strip()
@@ -63,4 +68,9 @@ def run():
 					end = values['TS']
 					elapsed_time = int(end)  - int(start)
 					logdata(sensor_id=values['ID'], temp=values['TF'], relhum=values['RH'], elapsed_time=elapsed_time)
+		'''
+		if(prev != values['RH']):
+			prev = values['RH']
+			control()  # since control is an expensive call, only do it if there is a change in relative humidity		
+		'''
 run()
