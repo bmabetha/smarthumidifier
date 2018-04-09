@@ -5,14 +5,13 @@ import subprocess
 import serial
 import random
 import MySQLdb
-import datetime
 
 #from controlpi import * 
 
 db = MySQLdb.connect(
 	host="humidifier.cyqxc8aabmoz.us-east-2.rds.amazonaws.com",
 	user="bmabetha",
-	passwd="bmabetha",
+	passwd="***",
 	db="humidifier")
 
 cursor = db.cursor()
@@ -25,7 +24,6 @@ ser = serial.Serial(
 port = '/dev/tty.usbmodem1411', # When using arduino to laptop
 baudrate = 9600
 )
-
 
 DEBUG = True
 
@@ -41,7 +39,7 @@ def logdata(sensor_id, temp, relhum, elapsed_time):
 	cursor = db.cursor()
 	cursor.execute("SELECT id, setpoint_relhum FROM humidifier ORDER BY id DESC LIMIT 1")
 	data = cursor.fetchall()
-	setpoint_relhum = data[0][1]
+	setpoint_relhum = 40;
 
 	cursor.execute("INSERT INTO humidifier (sensor_id, temp, relhum, elapsed_time, setpoint_relhum) VALUES (%s,%s,%s,%s,%s)", (sensor_id, temp, relhum, elapsed_time,setpoint_relhum))
 	db.commit()

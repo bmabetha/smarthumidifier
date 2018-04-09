@@ -36,7 +36,7 @@ Session(app)
 db = MySQLdb.connect(
     host="humidifier.cyqxc8aabmoz.us-east-2.rds.amazonaws.com",
     user="bmabetha",
-    passwd="bmabetha",
+    passwd="***",
     db="humidifier")
 
 cursor = db.cursor()
@@ -57,6 +57,7 @@ def index():
     cursor.execute("SELECT * FROM humidifier ORDER BY id DESC LIMIT 1")
     info = cursor.fetchall()
     cursor.close()
+    print info
     return render_template("setrelhum.html", info=info)
 
 
@@ -73,7 +74,13 @@ def setrelhum():
         cursor.execute("UPDATE humidifier SET setpoint_relhum = %s, by_user = %s WHERE id = %s", ([setrelhum, 1, data[0][0]]))
         db.commit()
         cursor.close()
-    return render_template("setrelhum.html")
+
+    cursor = db.cursor()
+    cursor.execute("SELECT * FROM humidifier ORDER BY id DESC LIMIT 1")
+    info = cursor.fetchall()
+    cursor.close()
+    print info
+    return render_template("setrelhum.html", info=info[0])
 
 @app.route("/login", methods=["GET", "POST"])
 def login():

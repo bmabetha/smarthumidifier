@@ -8,80 +8,30 @@ import numpy as np
 import time
 import random
 import matplotlib.pyplot as plt
-import sklearn 
+import sklearn
+import pandas as pd 
 from sklearn import svm
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.decomposition import PCA
 from sklearn.multiclass import OutputCodeClassifier
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import LinearSVC
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-db = MySQLdb.connect(
-	host="humidifier.cyqxc8aabmoz.us-east-2.rds.amazonaws.com",
-	user="bmabetha",
-	passwd="***",
-	db="humidifier")
-
-DEBUG = True
-
-def getdata():
-	print "getting data"
-	cursor = db.cursor()
-	cursor.execute("SELECT * FROM humidifier ORDER BY id DESC")
-	rows = cursor.fetchall()
-	cursor.close()
-	return rows
-
-def gettest():
-	cursor = db.cursor()
-	cursor.execute("SELECT * FROM humidifier ORDER BY id DESC LIMIT 1")
-	tests = cursor.fetchall()
-	cursor.close()
-	return tests
-
-def getfeatures(rows):
-	datapoints = []
-	humoutput = []
-	logging_id = []
-	for row in rows:
-		log_id = row[0]
-		sensor_id = row[1]
-		date = row[2]
-		year = date.year
-		day = date.day
-		month = date.month
-		hour = date.hour
-		temp = row[3]
-		relhum = row[4]
-		setpoint_relhum = row[5]
-		elapsed_time = row[6]
-		datapoints.append([month, hour, temp])
-		humoutput.append(setpoint_relhum)
-		logging_id.append(log_id)
-	return (datapoints, humoutput, log_id)
-
-def setpoint(rows):
+# This training analysis uses training data from online. https://archive.ics.uci.edu/ml/datasets/SML2010
+def setpoint(datapoints):
 	setpoint_relhumTemp = []
 	setpoint_relhumTime = []
 	setpoint_relhumTempTime = []
 
 	# Create Humidity Output for differnet users
-	for row in rows:
-		log_id = row[0]
-		sensor_id = row[1]
-		date = row[2]
-		year = date.year
-		day = date.day
-		month = date.month
-		hour = date.hour
-		temp = row[3]
-		relhum = row[4]
-		setpoint_relhum = row[5]
-		elapsed_time = row[6]
-		if (temp == 0):
-			temp = 59 
+	for datapoint in datapoints:
+		hour = datapoint[0]
+		day = datapoint[1]
+		temp = datapoint[2]
+		hum = datapoint[3]
+		light = datapoint[4] 
+		#relative humidity for a Temp dependent user
 		relhumTemp = temp*0.68 + random.uniform(0, 1)
 		setpoint_relhumTemp.append(relhumTemp)
 
@@ -104,6 +54,7 @@ def setpoint(rows):
 		if(2 < hour <= 6):
 			relhumTime = 40 + random.uniform(0, 1)
 		setpoint_relhumTime.append(relhumTime)
+
 		# Temperature and Time dependent user
 
 		if(2 < hour <= 6):
@@ -127,15 +78,55 @@ def setpoint(rows):
 		setpoint_relhumTempTime.append(relhumTempTime)
 
 	return (setpoint_relhumTemp, setpoint_relhumTime, setpoint_relhumTempTime)
-		
-def train():
-	rows = getdata()
 
-	(datapoints, humoutput, log_ids) = getfeatures(rows)
 
-	X = np.asarray(datapoints)
 
-	(setpointTemp, setpointTime, setpointTempTime) = setpoint(rows)
+def onlinedata():
+	lines1 = map(str.split, open('NEW-DATA-1.T15.txt'))
+	lines2 = map(str.split, open('NEW-DATA-2.T15.txt'))
+	features1 = np.asarray(lines1)
+	features2 = np.asarray(lines2)
+	#print features2[1:1372,:].shape
+	#features = np.concatenate((features1, features2[1:1372,:]), axis=1)
+	print len(features1)
+	print features2.shape
+	datapoints1 = []
+	for feature in features1:
+		time = feature[1].split(":")
+		hour = time[0]
+		temp = feature[3]
+		hum = feature[8]
+		light = feature[10]
+		day = feature[23]
+		datapoints1.append([hour,day,temp,hum,light])
+
+	datapoints2 = []
+	for feature in features2:
+		time = feature[1].split(":")
+		hour = time[0]
+		temp = feature[3]
+		hum = feature[8]
+		light = feature[10]
+		day = feature[23]
+		datapoints2.append([hour,day,temp,hum,light])
+
+	datapoints1 = np.asarray(datapoints1)
+	datapoints2 = np.asarray(datapoints2)
+
+	datapoints = np.concatenate((datapoints1[1:2765,:], datapoints2[1:1374,:]), axis=0)
+	
+	print datapoints[0]
+	print datapoints.shape
+	datapoints = [map(float, x) for x in datapoints]
+	datapoints = np.asarray(datapoints)
+	print datapoints.shape
+
+	
+	(setpointTemp, setpointTime, setpointTempTime) = setpoint(datapoints)
+
+	X = datapoints
+
+	print "Shape of X:", X.shape
 
 	Y_temp = np.asarray(setpointTemp) 
 	Y_time = np.asarray(setpointTime) 
@@ -165,7 +156,6 @@ def train():
 	
 	# Using SVM to train data
 	
-
 	# Training For Temp Dependent Setpoints
 	clf = svm.SVC()
 	clf.fit(X_traintemp, Y_traintemp)
@@ -299,7 +289,7 @@ def train():
 	barlist[6].set_color('r')
 	barlist[7].set_color('b')
 	barlist[8].set_color('g')
-	plt.title('Accuracy performance of learning algorithms')
+	plt.title('Accuracy of the Learning Algorithms for Different User Profiles')
 	plt.ylabel('Accuracy (%)')
 	plt.grid()
 	plt.show()
@@ -320,9 +310,81 @@ def train():
 	barlist[3].set_color('b')
 	barlist[4].set_color('g')
 	barlist[5].set_color('g')
-	plt.title('Overfitting Analysis for Temp Dependent Prediction')
+	plt.title('Overfitting Analysis for Temp Dependent Prediction for a Time Dependent User')
+	plt.ylabel('Accuracy (%)')
+	plt.grid()
+	plt.show()
+	print type(datapoints[1][2])
+	print datapoints[1]
+
+	svm_average_accuracy = (svm_accuracytemp + svm_accuracytime + svm_accuracytemptime)/3
+	rf_average_accuracy = (rf_accuracytemp + rf_accuracytime + rf_accuracytemptime)/3
+	knn_average_accuracy = (knn_accuracytemp + knn_accuracytime + knn_accuracytemptime)/3
+
+	print 'SVM Average Accuracy:',svm_average_accuracy
+	print 'RF Average Accuracy:',rf_average_accuracy
+	print 'KNN Average Accuracy:',knn_average_accuracy
+
+	svm_tempoverfitting = svm_accuracytemptrain - svm_accuracytemp
+	rf_tempoverfitting = rf_accuracytemptrain - rf_accuracytemp
+	knn_tempoverfitting = knn_accuracytemptrain - knn_accuracytemp
+
+	svm_timeoverfitting = svm_accuracytimetrain - svm_accuracytime
+	rf_timeoverfitting = rf_accuracytimetrain - rf_accuracytime
+	knn_timeoverfitting = knn_accuracytimetrain - knn_accuracytime
+
+	svm_temptimeoverfitting = svm_accuracytemptimetrain - svm_accuracytemptime
+	rf_temptimeoverfitting = rf_accuracytemptimetrain - rf_accuracytemptime
+	knn_temptimeoverfitting = knn_accuracytemptimetrain - knn_accuracytemptime
+
+	svm_overfitting = (svm_tempoverfitting + svm_timeoverfitting + svm_temptimeoverfitting)/3
+	rf_overfitting = (rf_tempoverfitting + rf_timeoverfitting + rf_temptimeoverfitting)/3
+	knn_overfitting = (knn_tempoverfitting + knn_timeoverfitting + knn_temptimeoverfitting)/3
+
+	print 'SVM Temp Overfitting:',svm_tempoverfitting
+	print 'RF Temp Overfitting:',rf_tempoverfitting
+	print 'KNN Temp Overfitting:',knn_tempoverfitting
+
+	print 'SVM Time Overfitting:',svm_timeoverfitting
+	print 'RF Time Overfitting:',rf_timeoverfitting
+	print 'KNN Time Overfitting:',knn_timeoverfitting
+
+	print 'SVM Time Temp Overfitting:',svm_temptimeoverfitting
+	print 'RF Time Temp Overfitting:',rf_temptimeoverfitting
+	print 'KNN Time Temp Overfitting:',knn_temptimeoverfitting
+
+	print 'SVM Overfitting:',svm_overfitting
+	print 'RF Overfitting:',rf_overfitting
+	print 'KNN Overfitting:',knn_overfitting
+
+	averageaccuracy = [svm_average_accuracy, rf_average_accuracy, knn_average_accuracy]
+	averageaccuracy = [x * 100 for x in averageaccuracy]
+
+	x = np.arange(len(averageaccuracy))
+	barlist = plt.bar(x, averageaccuracy)
+	plt.xticks(x+.5, ['SVM Ave','RF Ave','KNN Ave'])
+	barlist[0].set_color('r')
+	barlist[1].set_color('b')
+	barlist[2].set_color('g')
+	plt.title('Average Accuracy Across User Profiles')
+	plt.ylabel('Accuracy (%)')
+	plt.grid()
+	plt.show()
+
+	averageoverfitting = [svm_overfitting, rf_overfitting, knn_overfitting]
+	averageoverfitting = [x * 100 for x in averageoverfitting]
+
+	x = np.arange(len(averageoverfitting))
+	barlist = plt.bar(x, averageoverfitting)
+	plt.xticks(x+.5, ['SVM OverfittingAve','RF OverfittingAve','KNN OverfittingAve'])
+	barlist[0].set_color('r')
+	barlist[1].set_color('b')
+	barlist[2].set_color('g')
+	plt.title('Average Overfitting Across User Profiles')
 	plt.ylabel('Accuracy (%)')
 	plt.grid()
 	plt.show()
 	
-train()	
+
+
+onlinedata()

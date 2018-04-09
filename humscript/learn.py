@@ -17,7 +17,7 @@ from sklearn.metrics import accuracy_score
 db = MySQLdb.connect(
 	host="humidifier.cyqxc8aabmoz.us-east-2.rds.amazonaws.com",
 	user="bmabetha",
-	passwd="bmabetha",
+	passwd="***",
 	db="humidifier")
 
 cursor = db.cursor()
@@ -72,7 +72,7 @@ def learn():
 	#X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.33, random_state=42)
 	(test_datapoints, test_humoutput, log_id) = getfeatures(gettest())
 
-	test_datapoints = np.asarray(test_datapoints)
+	test_datapoints = np.asarray(test_datapoints(1:len(test_datapoints(1,:))))
 	test_humoutput = np.asarray(test_humoutput)
 
 	# Convert floats to ints
@@ -97,5 +97,5 @@ def learn():
 while(True):	
 	learn()
 	# Learn every 10 minutes (ideally have the user determine the learning interval)
-	t = 10
+	t = 10*60
 	time.sleep(t)

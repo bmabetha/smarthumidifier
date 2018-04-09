@@ -8,7 +8,7 @@ import RPi.GPIO as GPIO
 db = MySQLdb.connect(
 	host="humidifier.cyqxc8aabmoz.us-east-2.rds.amazonaws.com",
 	user="bmabetha",
-	passwd="bmabetha",
+	passwd="***",
 	db="humidifier")
 
 ser = serial.Serial(
